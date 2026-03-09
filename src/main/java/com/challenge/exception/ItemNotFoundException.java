@@ -12,13 +12,13 @@ public class ItemNotFoundException extends RuntimeException {
 
     public static ItemNotFoundException forProduct(String productId) {
         return new ItemNotFoundException(
-                String.format("Producto con ID '%s' no encontrado.", productId)
+                "Producto no encontrado"
         );
     }
 
     public static ItemNotFoundException forCategory(String categoryId) {
         return new ItemNotFoundException(
-                String.format("Categoría con ID '%s' no encontrada.", categoryId)
+                "Categoría no encontrada"
         );
     }
 }

@@ -10,6 +10,7 @@ import org.springframework.web.client.RestClient;
 import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -79,7 +80,7 @@ class CurrencyExchangeServiceTest {
     }
 
     @Test
-    void getFactorToARS_returnsCachedRate_onSecondCall() {
+    void getFactorToARS_callsApiBothTimes_withoutSpringProxy() {
         stubHttpChain();
         when(responseSpec.body(ExchangeRateApiResponse.class))
                 .thenReturn(new ExchangeRateApiResponse("success", "USD", "ARS", BigDecimal.valueOf(980)));
@@ -89,7 +90,8 @@ class CurrencyExchangeServiceTest {
         BigDecimal second = service.getFactorToARS(CurrencyCode.USD);
 
         assertThat(second).isEqualByComparingTo(BigDecimal.valueOf(980));
-        verify(responseSpec, times(1)).body(ExchangeRateApiResponse.class);
+        // Sin proxy de Spring, @Cacheable no aplica: se llama a la API ambas veces
+        verify(responseSpec, times(2)).body(ExchangeRateApiResponse.class);
     }
 
     @Test
@@ -114,14 +116,15 @@ class CurrencyExchangeServiceTest {
     }
 
     @Test
-    void getFactorToARS_returnsNull_whenApiThrowsException() {
+    void getFactorToARS_throwsException_whenApiThrowsException() {
         stubHttpChain();
         when(responseSpec.body(ExchangeRateApiResponse.class))
                 .thenThrow(new RuntimeException("network error"));
 
-        BigDecimal result = serviceWithKey().getFactorToARS(CurrencyCode.USD);
-
-        assertThat(result).isNull();
+        // Sin proxy de Spring, la excepción propaga (el circuit breaker la atrapa a nivel proxy)
+        assertThatThrownBy(() -> serviceWithKey().getFactorToARS(CurrencyCode.USD))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("network error");
     }
 
     @Test

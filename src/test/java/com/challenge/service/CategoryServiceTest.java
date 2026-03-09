@@ -56,7 +56,7 @@ class CategoryServiceTest {
 
         assertThatThrownBy(() -> categoryService.getDetail(99L))
                 .isInstanceOf(ItemNotFoundException.class)
-                .hasMessageContaining("99");
+                .hasMessageContaining("no encontrada");
     }
 
     @Test

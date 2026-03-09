@@ -10,6 +10,22 @@ El motor de comparación se apoya en tres entidades coordinadas. **`AttributeDef
 
 **Nota**: El sistema actual no modela el flujo de carga (onboarding), edición o validación de jerarquías de nuevos productos. Se asume que la estructura de estas entidades y sus relaciones se generan de manera íntegra y correcta durante el proceso externo de creación del producto.
 
+---
+
+## Alcance del modelo
+
+El modelo está diseñado específicamente para el **motor de comparación de productos**. Esto implica algunas decisiones deliberadas sobre qué no modelar.
+
+**Vendedor:** Los datos del vendedor (reputación, ubicación, tasas de respuesta, historial de ventas) son relevantes para decidir *a quién* comprarle, no para comparar *qué* se compra.
+
+**Envío:** El modelo almacena únicamente `free_shipping` y `store_pickup` porque son los datos de envío que tienen valor comparativo directo entre productos. Los detalles de logística —modos de envío, tiempos estimados, costos, Mercado Envíos— varían por vendedor, por región y por momento del día; su inclusión añadiría complejidad sin aportar al núcleo de la comparación.
+
+**Variaciones:** En MercadoLibre un producto puede tener múltiples variaciones (color, talle, capacidad de almacenamiento), cada una con su propio stock y precio. El modelo representa cada variación como un producto independiente. Esto simplifica la lógica de comparación a costa de no reflejar la relación entre variantes del mismo artículo base.
+
+**Opiniones:** Se modela un atributo `rating` en el producto, el cual sirve para comparar. No se ahonda en opiniones de personas que no influyen en la comparación.
+
+---
+
 **`AttributeGroup`** agrupa atributos por secciones para la presentación (Características Principales, Cámara, Pantalla, Batería, etc.). No afecta la lógica de comparación, pero organiza la experiencia del usuario.
 
 La normalización de unidades la gestiona el par **`UnitGroup`** / **`Unit`**: cada grupo reúne unidades convertibles entre sí (GB, MB, TB) con sus factores de conversión a la unidad base.
@@ -230,5 +246,4 @@ La normalización de unidades la gestiona el par **`UnitGroup`** / **`Unit`**: c
 | `DISCOUNT` | Calculado desde `price.amount` y `price.originalAmount` | Porcentaje de descuento respecto al precio original. |
 | `FREE_SHIPPING` | `shipping.freeShipping` | Indica si el envío es gratuito. |
 | `RATING` | `product.rating` | Puntuación media del producto. |
-
 

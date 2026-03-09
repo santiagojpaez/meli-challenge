@@ -14,6 +14,8 @@ import com.challenge.model.ComparableCategory;
 import com.challenge.repository.CategoryAttributeRuleRepository;
 import com.challenge.repository.CategoryRepository;
 import com.challenge.repository.ComparableCategoryRepository;
+
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +40,7 @@ public class CategoryService {
         this.comparableCategoryRepository = comparableCategoryRepository;
     }
 
+    @Cacheable("categoryTree")
     public List<CategoryTreeDTO> getTree() {
         List<Category> all = categoryRepository.findAllWithChildren();
         return all.stream()
@@ -46,6 +49,7 @@ public class CategoryService {
                 .toList();
     }
 
+    @Cacheable(value = "categoryDetail", key = "#id")
     public CategoryDetailDTO getDetail(Long id) {
         Category category = categoryRepository.findByIdWithParent(id)
                 .orElseThrow(() -> ItemNotFoundException.forCategory(id.toString()));
@@ -56,6 +60,7 @@ public class CategoryService {
         return CategoryMapper.toDetailDTO(category, comparableWith, attributeGroups);
     }
 
+    @Cacheable(value = "categoryAttributes", key = "#categoryId")
     public List<AttributeGroupDTO> getAttributeGroups(Long categoryId) {
         List<CategoryAttributeRule> rules = ruleRepository.findByCategoryId(categoryId);
         return buildAttributeGroupDTOs(rules);

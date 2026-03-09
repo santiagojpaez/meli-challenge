@@ -122,7 +122,7 @@ class ComparisonServiceTest {
 
         assertThatThrownBy(() -> comparisonService.compare(request))
                 .isInstanceOf(ItemNotFoundException.class)
-                .hasMessageContaining("MISSING");
+                .hasMessageContaining("no encontrado");
     }
 
     @Test
