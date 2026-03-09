@@ -26,7 +26,9 @@ El endpoint de health incluye dos indicadores:
 1. **db** — health check automático de Spring Data JPA que verifica conectividad a la base de datos H2
 2. **meliChallengeApi** — indicador custom (`ActuatorHealthConfig`) que retorna `UP` con metadata del componente. Actualmente estático, diseñado como punto de extensión para agregar checks de dependencias externas (API de tipo de cambio, etc.)
 
-Respuesta ejemplo de `/actuator/health`:
+**Nota sobre `show-details=when_authorized`:** Sin Spring Security habilitado, esta propiedad se comporta como `never` — nadie está autenticado, por lo tanto nadie ve los `withDetail(...)` de cada componente. El response muestra los componentes (porque `show-components=always`) pero solo con su `status`, sin detalles internos como `"component": "meli-challenge-api"` del health indicator custom.
+
+Respuesta ejemplo de `/actuator/health` (sin autenticación):
 ```json
 {
   "status": "UP",
@@ -61,6 +63,8 @@ El proyecto usa SLF4J vía Lombok (`@Slf4j`) con niveles estándar de Spring Boo
 | `CurrencyExchangeService` | DEBUG | Caché de tipo de cambio, API key no configurada |
 
 **Estado actual:** los logs se emiten en formato texto plano (default de Logback). No hay correlationId, requestId ni campos estructurados.
+
+**Nota:** `spring.jpa.show-sql=true` y `format_sql=true` están habilitados en la configuración actual, lo que produce un log por cada query SQL ejecutada. Esto es útil en desarrollo para depurar, pero en producción generaría un volumen excesivo de logs y debería desactivarse (ver [IMPROVEMENTS.md](IMPROVEMENTS.md) § Configuración por perfil).
 
 ---
 

@@ -1,12 +1,10 @@
 # Meli Challenge API
 
-API REST de consulta y comparación de productos, construida con Spring Boot 3. El sistema modela un catálogo donde cada producto pertenece a una categoría, posee atributos normalizados y puede compararse lado a lado con otros productos de categorías compatibles. La comparación produce una tabla agrupada por tipo de atributo, con highlights automáticos que señalan al ganador según la estrategia de cada atributo (mayor es mejor, menor es mejor, o neutral).
+API REST de consulta y comparación de productos, construida con Spring Boot 3.
 
 El alcance del proyecto está acotado intencionalmente a la consulta y comparación: no expone endpoints de creación ni administración de productos, categorías o atributos. Esta decisión respeta la consigna del challenge, que pone el foco en el motor de comparación. La carga inicial del catálogo se resuelve mediante datos de seed en SQL, lo que permite evaluar el sistema con un conjunto representativo de productos sin necesidad de una capa de ingesta. Se asume que dicha capa de ingesta es responsable de las validaciones, conversiones de unidades y resolución de sinónimos necesarias para que los datos persistan en el formato que el modelo requiere.
 
-El modelo de datos está diseñado para ser extensible sin cambios de código: agregar una categoría nueva con sus atributos, reglas de comparabilidad y productos se resuelve enteramente con INSERTs en la base de datos. Los atributos se normalizan a una unidad base al momento de la carga, lo que permite comparar valores heterogéneos (ej. 8 GB vs 8192 MB) sin cómputo en tiempo de request.
-
-El proyecto incluye documentación OpenAPI auto-generada, manejo centralizado de errores con respuestas JSON estandarizadas, y un pipeline de tests en tres niveles: unitarios (servicios con mocks), de capa web (controllers con MockMvc) y de integración completa (stack real contra H2).
+El proyecto incluye documentación OpenAPI auto-generada, manejo centralizado de errores con respuestas JSON estandarizadas y un pipeline de tests.
 
 ---
 
@@ -34,6 +32,18 @@ mvn spring-boot:run
 
 La aplicación queda disponible en `http://localhost:8080`.
 
+### Docker
+
+El proyecto incluye un Dockerfile multi-stage (build con JDK 21, runtime con JRE 21 Alpine):
+
+```bash
+# Construir la imagen
+docker build -t meli-challenge .
+
+# Ejecutar el contenedor
+docker run -p 8080:8080 meli-challenge
+```
+
 ---
 
 ## Tests
@@ -47,11 +57,44 @@ mvn verify
 # Reporte HTML en: target/site/jacoco/index.html
 ```
 
-El proyecto tiene cuatro niveles de tests:
-- **Unitarios de servicio** — `CategoryServiceTest`, `ProductServiceTest` (Mockito, sin contexto Spring)
-- **De controller** — `CategoryControllerTest`, `ProductControllerTest`, `ComparisonControllerTest` (`@WebMvcTest` con MockMvc)
-- **De integración** — `ApiIntegrationTest` (`@SpringBootTest` contra H2 con data.sql real)
-- **De repositorio** — `RepositoryTest` (`@DataJpaTest` con datos manuales)
+El proyecto tiene seis niveles de tests:
+
+- **Unitarios de servicio** — lógica de negocio aislada con Mockito, sin contexto Spring
+  - `CategoryServiceTest` — árbol, detalle, atributos y categorías comparables
+  - `ProductServiceTest` — búsqueda, listado por categoría y detalle de producto
+  - `ComparisonServiceTest` — comparación completa: misma categoría, cross-categoría, validaciones y casos de error
+  - `CurrencyExchangeServiceTest` — normalización de tipo de cambio a ARS, caché y fallback si la API key está ausente
+  - `ProductFieldResolverTest` — resolución de atributos virtuales: precio normalizado, descuento, envío gratis y rating
+- **Unitarios de mapper** — conversión entidad → DTO sin dependencias externas
+  - `CategoryMapperTest` — mapeo a `CategoryTreeDTO` (recursivo) y `CategorySummaryDTO`
+  - `ProductMapperTest` — mapeo a `ProductSummaryDTO` con precio, envío y valores nulos
+- **Unitarios de repositorio** — queries JPQL/nativas contra H2 en memoria (`@DataJpaTest`)
+  - `RepositoryTest` — búsqueda de productos por nombre/marca/modelo, reglas de atributos por categoría, pares de categorías comparables
+- **De manejo de excepciones** — respuestas de error estandarizadas
+  - `GlobalExceptionHandlerTest` — verifica status HTTP y cuerpo `ApiError` para `ItemNotFoundException` (404), `CategoryMismatchException` (422), `InvalidComparisonRequestException` (400) y violaciones de constraint
+- **De controller** (`@WebMvcTest` + MockMvc)
+  - `CategoryControllerTest`, `ProductControllerTest`, `ComparisonControllerTest`
+- **De integración** — stack completo contra H2 con `data.sql` real
+  - `ApiIntegrationTest` (`@SpringBootTest`)
+
+---
+
+## Frontend Demo
+
+Se creó un frontend simple utilizando la herramienta de IA [v0.dev](https://v0.dev) para visualizar los datos devueltos por esta API. Podés encontrar el código fuente y las instrucciones en el siguiente repositorio:
+
+🔗 https://github.com/santiagojpaez/v0-product-comparison-app
+
+Para ejecutar el frontend localmente:
+
+```bash
+git clone https://github.com/santiagojpaez/v0-product-comparison-app.git
+cd v0-product-comparison-app
+npm install --legacy-peer-deps
+npm run dev
+```
+
+Asegurate de tener el sistema corriendo en [http://localhost:8080/](http://localhost:8080/) para que la demostración funcione
 
 ---
 
@@ -65,6 +108,8 @@ Con el servidor corriendo:
 | OpenAPI spec (JSON) | [http://localhost:8080/api-docs](http://localhost:8080/api-docs) |
 
 El spec cubre todos los endpoints, parámetros, DTOs de request/response y códigos de error.
+
+Además, contiene una descripción del funcionamiento de cada endpoint con especificaciones detalladas de los parámetros de entrada, esquemas de respuesta y la funcionalidad 'Try it out', que permite ejecutar ejemplos predefinidos como casos de prueba.
 
 ---
 
@@ -146,4 +191,7 @@ En desarrollo, la consola de H2 está habilitada:
 | [OBSERVABILITY.md](docs/OBSERVABILITY.md) | Estado actual y plan de observabilidad (Actuator, métricas, logs, alertas) |
 | [AVAILABILITY.md](docs/AVAILABILITY.md) | Análisis de disponibilidad |
 | [STANDARDS.md](docs/STANDARDS.md) | Convenciones de naming, códigos HTTP y estructura de errores |
-| [DB_OPTIMIZATION.md](docs/DB_OPTIMIZATION.md) | Optimizaciones a nivel base de datos
+| [DB_OPTIMIZATION.md](docs/DB_OPTIMIZATION.md) | Optimizaciones a nivel base de datos |
+| [IMPROVEMENTS.md](docs/IMPROVEMENTS.md) | Mejoras a realizar ante salida a producción |
+| [DATA_MODEL.md](docs/DATA_MODEL.md) | Descripción detallada del modelo de datos |
+| [AI.md](docs/AI.md) | Utilización de Inteligencia Artificial durante el desarrollo
