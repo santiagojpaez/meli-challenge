@@ -57,7 +57,7 @@ En cualquiera de los dos casos, el contrato de la API no cambia; solo la impleme
 
 ## 5. Caché con Redis
 
-**Estado actual:** Sin caché en los endpoints. `CurrencyExchangeService` tiene un caché en memoria (`ConcurrentHashMap`, TTL 12h) que no se comparte entre instancias.
+**Estado actual:** Spring Cache con Caffeine como proveedor local. Los caches `categoryTree`, `categoryDetail`, `categoryAttributes`, `productDetail` y `exchangeRates` están activos con TTL y tamaños configurados en `CacheConfig`. Caffeine no comparte estado entre instancias.
 
 **A incorporar:**
 
@@ -70,19 +70,18 @@ Endpoint `POST /api/comparisons` es el más costoso (múltiples queries + highli
 - **Invalidación:** por evento de actualización de precio o atributo del producto; sin eventos disponibles, el TTL es la garantía de frescura.
 - **Implementación:** `@Cacheable` de Spring Cache + `RedisCacheManager`. Aplica igual a `compare()` y `diff()`.
 
-### Caché del tipo de cambio
+### Migración de Caffeine a Redis para multi-instancia
 
-El `ConcurrentHashMap` actual no se comparte entre instancias. Reemplazar por Redis con el mismo TTL de 12h para que todas las instancias compartan la tasa ya obtenida.
+Los caches locales (Caffeine) no se comparten entre réplicas. En producción con más de una instancia:
 
-### Otros candidatos
+| Cache | TTL actual (Caffeine) | Almacenamiento producción |
+|-------|----------------------|--------------------------|
+| `categoryTree` | 1 hora | Redis |
+| `categoryDetail` | 1 hora | Redis |
+| `productDetail` | 10 min | Redis |
+| `exchangeRates` | 12 horas | Redis |
 
-| Recurso | Almacenamiento | TTL sugerido |
-|---------|---------------|-------------|
-| Árbol de categorías (`GET /api/categories`) | Caffeine (local) o Redis | 1 hora |
-| Reglas de categoría (cargadas en cada comparación) | Caffeine (local) | 30 minutos |
-| Detalle de producto (`GET /api/products/{id}`) | Redis | 10 minutos |
-
-Dependencias a agregar: `spring-boot-starter-data-redis`, `spring-boot-starter-cache`.
+Dependencias a agregar: `spring-boot-starter-data-redis`.
 
 ---
 

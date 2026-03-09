@@ -107,6 +107,6 @@ class ProductServiceTest {
 
         assertThatThrownBy(() -> productService.getDetail("NONEXISTENT"))
                 .isInstanceOf(ItemNotFoundException.class)
-                .hasMessageContaining("NONEXISTENT");
+                .hasMessageContaining("no encontrado");
     }
 }

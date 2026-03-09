@@ -59,17 +59,22 @@ mvn verify
 
 El proyecto tiene seis niveles de tests:
 
+- **Integración, Configuración y Resiliencia** - robustez del sistema ante fallos de red, ráfagas de tráfico y la eficiencia en el uso de recursos mediante el contexto real de Spring
+  - `CacheIntegrationTest`
+  - `ResilienceIntegrationTest`
+  - `RateLimitFilterTest`
+  - `TimeoutConfigurationTest`
 - **Unitarios de servicio** — lógica de negocio aislada con Mockito, sin contexto Spring
-  - `CategoryServiceTest` — árbol, detalle, atributos y categorías comparables
-  - `ProductServiceTest` — búsqueda, listado por categoría y detalle de producto
-  - `ComparisonServiceTest` — comparación completa: misma categoría, cross-categoría, validaciones y casos de error
-  - `CurrencyExchangeServiceTest` — normalización de tipo de cambio a ARS, caché y fallback si la API key está ausente
-  - `ProductFieldResolverTest` — resolución de atributos virtuales: precio normalizado, descuento, envío gratis y rating
+  - `CategoryServiceTest`
+  - `ProductServiceTest`
+  - `ComparisonServiceTest` 
+  - `CurrencyExchangeServiceTest` 
+  - `ProductFieldResolverTest`
 - **Unitarios de mapper** — conversión entidad → DTO sin dependencias externas
-  - `CategoryMapperTest` — mapeo a `CategoryTreeDTO` (recursivo) y `CategorySummaryDTO`
-  - `ProductMapperTest` — mapeo a `ProductSummaryDTO` con precio, envío y valores nulos
+  - `CategoryMapperTest`
+  - `ProductMapperTest` 
 - **Unitarios de repositorio** — queries JPQL/nativas contra H2 en memoria (`@DataJpaTest`)
-  - `RepositoryTest` — búsqueda de productos por nombre/marca/modelo, reglas de atributos por categoría, pares de categorías comparables
+  - `RepositoryTest` 
 - **De manejo de excepciones** — respuestas de error estandarizadas
   - `GlobalExceptionHandlerTest` — verifica status HTTP y cuerpo `ApiError` para `ItemNotFoundException` (404), `CategoryMismatchException` (422), `InvalidComparisonRequestException` (400) y violaciones de constraint
 - **De controller** (`@WebMvcTest` + MockMvc)

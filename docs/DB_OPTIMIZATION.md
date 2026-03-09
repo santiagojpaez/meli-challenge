@@ -77,8 +77,10 @@ El modelo ya declara índices en las anotaciones `@Table(indexes = ...)`:
 
 ### Estado actual
 
-- **CurrencyExchangeService:** `ConcurrentHashMap` en memoria con TTL de 12 horas por moneda
-- **Endpoints:** sin caché
+- **CurrencyExchangeService:** `@Cacheable("exchangeRates")` con Caffeine, TTL 12 horas por moneda
+- **CategoryService:** `@Cacheable` en `getTree()` (TTL 1h), `getDetail()` (TTL 1h), `getAttributeGroups()` (TTL 1h)
+- **ProductService:** `@Cacheable("productDetail")` en `getDetail()` (TTL 10min)
+- **Configuración:** `CacheConfig` registra 5 caches nombrados con tamaño máximo independiente (ver [AVAILABILITY.md](AVAILABILITY.md) § Caché)
 
 ### Producción: Redis sobre `/api/comparisons`
 
@@ -95,12 +97,15 @@ Si el request incluye `focusedAttributeIds`, se agregan a la clave: `compare:MLA
 
 **Implementación:** `@Cacheable` de Spring Cache con `RedisCacheManager`. Anotar `ComparisonService.compare()` y `diff()`.
 
-### Otros candidatos a caché
+### Para producción: Redis
 
-| Recurso | Almacenamiento | TTL | Motivo |
-|---------|---------------|-----|--------|
-| Árbol de categorías | Caffeine (local) | 1 hora | Cambia rara vez, se consulta frecuentemente |
-| Reglas de categoría | Caffeine (local) | 30 minutos | Estables, se consultan en cada comparación |
-| Detalle de producto | Redis | 10 minutos | Combina datos de varias tablas, lectura frecuente |
+El caché de tipos de cambio y los caches por instancia con Caffeine no se comparten entre réplicas. Para producción multi-instancia, migrar a Redis:
+
+| Recurso | Almacenamiento actual | Almacenamiento producción | TTL |
+|---------|----------------------|---------------------------|-----|
+| `POST /api/comparisons` | Sin caché | Redis | 5-10 min |
+| Árbol de categorías | Caffeine (local) | Redis | 1 hora |
+| Detalle de producto | Caffeine (local) | Redis | 10 min |
+| Tipos de cambio | Caffeine (local) | Redis | 12 horas |
 
 ---

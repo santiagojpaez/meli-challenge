@@ -14,6 +14,7 @@ import com.challenge.repository.ProductAttributeRepository;
 import com.challenge.repository.ProductRepository;
 import com.challenge.repository.CategoryRepository;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -56,6 +57,7 @@ public class ProductService {
                 .map(ProductMapper::toSummaryDTO);
     }
 
+    @Cacheable(value = "productDetail", key = "#productId")
     public ProductDetailDTO getDetail(String productId) {
         Product product = productRepository.findWithRelationsById(productId)
                 .orElseThrow(() -> ItemNotFoundException.forProduct(productId));

@@ -183,12 +183,11 @@ Los repositorios usan `@EntityGraph` para eager-loading selectivo de `price` y `
 
 ### Caché
 
-**Estado actual:** `CurrencyExchangeService` implementa un caché en memoria (`ConcurrentHashMap`) con TTL de 12 horas para los tipos de cambio. No hay caché sobre los endpoints de la API.
+**Estado actual:** Spring Cache con Caffeine como proveedor local en memoria. `CacheConfig` define cinco caches con TTL y tamaño independientes (ver [AVAILABILITY.md](AVAILABILITY.md) § Caché). Los tipos de cambio se cachean con `@Cacheable("exchangeRates")` (TTL 12h). Los endpoints de categoría y detalle de producto tienen `@Cacheable` en sus métodos de servicio.
 
 **Producción:** se agregaría caché a nivel de:
 - **Endpoint `/api/comparisons`**: Redis con clave basada en los product IDs ordenados (ej. `compare:MLA001:MLA002:MLA003`). TTL de 5-10 minutos. Invalidación por cambio de precio o atributos del producto.
-- **Árbol de categorías**: cambia muy poco, el resultado de `getTree()` podría cachearse con TTL largo (1 hora) o invalidación por evento.
-- **Reglas de categoría**: estables por naturaleza, candidatas a caché local con Caffeine y TTL de 30 minutos.
+- **Tipo de cambio**: mover de Caffeine (local por instancia) a Redis para compartir las tasas ya obtenidas entre todas las instancias del servicio.
 
 ---
 
