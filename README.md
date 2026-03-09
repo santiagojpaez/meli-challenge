@@ -79,6 +79,25 @@ El proyecto tiene seis niveles de tests:
 
 ---
 
+## Frontend Demo
+
+Se creó un frontend simple utilizando la herramienta de IA [v0.dev](https://v0.dev) para visualizar los datos devueltos por esta API. Podés encontrar el código fuente y las instrucciones en el siguiente repositorio:
+
+🔗 https://github.com/santiagojpaez/v0-product-comparison-app
+
+Para ejecutar el frontend localmente:
+
+```bash
+git clone https://github.com/santiagojpaez/v0-product-comparison-app.git
+cd v0-product-comparison-app
+npm install --legacy-peer-deps
+npm run dev
+```
+
+Asegurate de tener el sistema corriendo en [http://localhost:8080/](http://localhost:8080/) para que la demostración funcione
+
+---
+
 ## Documentación OpenAPI
 
 Con el servidor corriendo:
@@ -174,4 +193,5 @@ En desarrollo, la consola de H2 está habilitada:
 | [STANDARDS.md](docs/STANDARDS.md) | Convenciones de naming, códigos HTTP y estructura de errores |
 | [DB_OPTIMIZATION.md](docs/DB_OPTIMIZATION.md) | Optimizaciones a nivel base de datos |
 | [IMPROVEMENTS.md](docs/IMPROVEMENTS.md) | Mejoras a realizar ante salida a producción |
-| [DATA_MODEL.md](docs/DATA_MODEL.md) | Descripción detallada del modelo de datos
+| [DATA_MODEL.md](docs/DATA_MODEL.md) | Descripción detallada del modelo de datos |
+| [AI.md](docs/AI.md) | Utilización de Inteligencia Artificial durante el desarrollo
