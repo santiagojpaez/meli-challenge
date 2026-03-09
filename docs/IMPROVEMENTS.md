@@ -4,11 +4,16 @@ Mejoras a considerar si la API pasara a producción (fuera del alcance del desaf
 
 ---
 
-## 1. Spring Security
+## 1. Spring Security y CORS
 
-**Estado actual:** Sin autenticación ni autorización; todos los endpoints son públicos.
+**Estado actual:** Sin autenticación ni autorización; todos los endpoints son públicos. La configuración CORS (`CorsConfig`) permite cualquier origen (`*`) con `allowCredentials=true`, pensado para desarrollo local.
 
-**A incorporar:** `spring-boot-starter-security` con autenticación JWT (stateless, apto para múltiples instancias) o sesiones según el contexto. Definir roles y scopes para separar acceso de lectura del de escritura (cuando exista). Restringir los endpoints de Actuator con `management.endpoint.health.show-details=when_authorized` para que los detalles de salud solo sean visibles con credenciales de operación.
+**A incorporar:**
+
+- **Autenticación:** `spring-boot-starter-security` con autenticación JWT (stateless, apto para múltiples instancias) o sesiones según el contexto. Definir roles y scopes para separar acceso de lectura del de escritura (cuando exista).
+- **Actuator:** Restringir los endpoints de Actuator con `management.endpoint.health.show-details=when_authorized` para que los detalles de salud solo sean visibles con credenciales de operación. Nota: esta propiedad ya está configurada, pero sin Spring Security habilitado `when_authorized` se comporta como `never` (nadie está autenticado → nadie ve detalles).
+- **CORS:** Restringir `allowedOriginPattern("*")` a los dominios concretos del frontend. La combinación actual de `allowCredentials(true)` + origen `*` permite que cualquier sitio haga requests autenticados a la API. En producción, definir una lista explícita de orígenes permitidos.
+- **Gestión de secrets:** Mover la API key de ExchangeRate-API (actualmente hardcodeada en `application.properties`) a un mecanismo seguro: variables de entorno inyectadas por CI/CD, Spring Cloud Config con vault, o AWS Secrets Manager / GCP Secret Manager.
 
 ---
 
@@ -78,3 +83,27 @@ El `ConcurrentHashMap` actual no se comparte entre instancias. Reemplazar por Re
 | Detalle de producto (`GET /api/products/{id}`) | Redis | 10 minutos |
 
 Dependencias a agregar: `spring-boot-starter-data-redis`, `spring-boot-starter-cache`.
+
+---
+
+## 6. Configuración por perfil (dev vs prod)
+
+**Estado actual:** Existe un único `application.properties` con configuración de desarrollo:
+
+| Propiedad | Valor actual | Riesgo en producción |
+|-----------|-------------|---------------------|
+| `spring.jpa.hibernate.ddl-auto` | `create-drop` | Destruye todas las tablas al cerrar la aplicación |
+| `spring.jpa.show-sql` | `true` | Genera un volumen excesivo de logs con cada query SQL |
+| `spring.jpa.properties.hibernate.format_sql` | `true` | Agrega líneas extra a cada query logueada |
+| `spring.h2.console.enabled` | `true` | Expone la consola H2 con acceso directo a la base de datos |
+
+**A incorporar:** Perfiles de Spring (`application-dev.properties` + `application-prod.properties`). En producción:
+
+```properties
+# Migraciones con Flyway o Liquibase en lugar de DDL automático
+spring.jpa.hibernate.ddl-auto=validate
+spring.jpa.show-sql=false
+spring.h2.console.enabled=false
+```
+
+El `ddl-auto=create-drop` es seguro con H2 en memoria (los datos se recrean en cada arranque), pero con una base de datos persistente (PostgreSQL, MySQL) borraría todas las tablas al apagar la aplicación. Reemplazar por `validate` (verifica que el esquema coincida con las entidades) y gestionar migraciones con Flyway o Liquibase.
